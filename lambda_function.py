@@ -1,40 +1,39 @@
 import boto3
 import json
+import os
+import logging
+import sys
+
+logger = logging.getLogger(__name__)
+out_hdlr = logging.StreamHandler(sys.stdout)
+out_hdlr.setLevel(logging.INFO)
+logger.addHandler(out_hdlr)
+logger.setLevel(logging.INFO)
+
+record = os.environ['ENV_VAR_DYN_DB_VALUE']
 
 client = boto3.client('dynamodb')
 var_title = 'view_count'
 def lambda_handler(event, context):
-  viewcount = client.get_item(
-    TableName='user_count',
-    Key={
-    "Id":{"N":"0"}
-    }
-  )
-  views = viewcount["Item"]["view_count"]["N"]
-  views = int(views)
-  views += 1
-  views = str(views)
+  logger.info('Update the counter by 1')
   data = client.update_item(
-    TableName='user_count',
+    TableName='siteVisits',
     Key={
-    "Id":{"N":"0"}
+      'id':{'S':record}
     },
-    UpdateExpression="set view_count=:vc",
-        ExpressionAttributeValues={
-            ':vc': {"N": views}
-        },
-        ReturnValues="UPDATED_NEW"
-  )
-  # json_data=json.dumps(data)
-  # print(json_data)
-  # views = json_data['Items']
-  response = {
-      'statusCode': 200,
-      'body': views,
-      'headers': {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+    UpdateExpression='SET visits = visits + :inc',
+      ExpressionAttributeValues={
+        ':inc': {'N': '1'}
       },
-  }
+      ReturnValues="UPDATED_NEW"
+  )
+  # response = {
+  #     'statusCode': 200,
+  #     'body': data,
+  #     'headers': {
+  #       'Content-Type': 'application/json',
+  #       'Access-Control-Allow-Origin': '*'
+  #     },
+  # }
   
-  return response
+  # return response
